@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>彩色圖片轉素描風格</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            padding: 40px;
+        }
+
+        h1 {
+            font-size: 36px;
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .upload-btn, .download-btn {
+            width: 100%;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .upload-btn {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .upload-btn:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+        }
+
+        .download-btn {
+            background: #10b981;
+            color: white;
+        }
+
+        .download-btn:hover {
+            background: #059669;
+            transform: translateY(-2px);
+        }
+
+        .controls {
+            background: #f9fafb;
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+
+        .controls h3 {
+            color: #374151;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .control-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        .control-group input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #d1d5db;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+        }
+
+        .control-group input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            border: none;
+        }
+
+        .images-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 30px;
+        }
+
+        .image-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .image-container h3 {
+            font-size: 18px;
+            color: #374151;
+        }
+
+        .image-wrapper {
+            border: 4px solid #d1d5db;
+            border-radius: 8px;
+            overflow: hidden;
+            background: white;
+        }
+
+        .image-wrapper img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .info-box {
+            background: #eff6ff;
+            padding: 24px;
+            border-radius: 12px;
+            margin-top: 30px;
+        }
+
+        .info-box h3 {
+            color: #1e40af;
+            margin-bottom: 16px;
+        }
+
+        .info-box ul {
+            list-style: none;
+            color: #1e3a8a;
+        }
+
+        .info-box li {
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .info-box li:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+        }
+
+        .info-box strong {
+            color: #1e40af;
+        }
+
+        #canvas {
+            display: none;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>彩色圖片轉素描風格</h1>
+        <p class="subtitle">使用傳統影像處理技術模擬鉛筆素描效果</p>
+
+        <input type="file" id="fileInput" accept="image/*">
+        <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+            📤 上傳圖片
+        </button>
+
+        <div id="controls" class="controls hidden">
+            <h3>⚙️ 調整參數</h3>
+            <div class="control-group">
+                <label for="edgeStrength">邊緣強度: <span id="edgeValue">1.5</span></label>
+                <input type="range" id="edgeStrength" min="0.5" max="3" step="0.1" value="1.5">
+            </div>
+            <div class="control-group">
+                <label for="textureIntensity">紙張紋理: <span id="textureValue">0.3</span></label>
+                <input type="range" id="textureIntensity" min="0" max="1" step="0.1" value="0.3">
+            </div>
+        </div>
+
+        <div class="images-grid" id="imagesGrid"></div>
+
+        <button class="download-btn hidden" id="downloadBtn">
+            💾 下載素描圖片
+        </button>
+
+        <canvas id="canvas"></canvas>
+
+        <div class="info-box">
+            <h3>使用的傳統影像處理技術:</h3>
+            <ul>
+                <li><strong>灰階轉換:</strong> 使用加權平均法將彩色圖片轉為灰階</li>
+                <li><strong>顏色反轉:</strong> 製作負片效果</li>
+                <li><strong>高斯模糊:</strong> 模擬鉛筆筆觸的柔和度</li>
+                <li><strong>顏色減淡混合:</strong> 創造素描的明暗效果</li>
+                <li><strong>Sobel 邊緣檢測:</strong> 強化物體輪廓</li>
+                <li><strong>紋理添加:</strong> 模擬紙張質感</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let currentImage = null;
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const fileInput = document.getElementById('fileInput');
+        const edgeSlider = document.getElementById('edgeStrength');
+        const textureSlider = document.getElementById('textureIntensity');
+        const edgeValue = document.getElementById('edgeValue');
+        const textureValue = document.getElementById('textureValue');
+        const controls = document.getElementById('controls');
+        const imagesGrid = document.getElementById('imagesGrid');
+        const downloadBtn = document.getElementById('downloadBtn');
+
+        fileInput.addEventListener('change', handleImageUpload);
+        edgeSlider.addEventListener('input', updateImage);
+        textureSlider.addEventListener('input', updateImage);
+        downloadBtn.addEventListener('click', downloadImage);
+
+        function handleImageUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    currentImage = img;
+                    processImage();
+                    controls.classList.remove('hidden');
+                    downloadBtn.classList.remove('hidden');
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function updateImage() {
+            edgeValue.textContent = edgeSlider.value;
+            textureValue.textContent = textureSlider.value;
+            if (currentImage) {
+                processImage();
+            }
+        }
+
+        function processImage() {
+            const edgeStrength = parseFloat(edgeSlider.value);
+            const textureIntensity = parseFloat(textureSlider.value);
+
+            canvas.width = currentImage.width;
+            canvas.height = currentImage.height;
+
+            ctx.drawImage(currentImage, 0, 0);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+
+            // 步驟 1: 轉灰階
+            const grayData = new Uint8ClampedArray(data.length);
+            for (let i = 0; i < data.length; i += 4) {
+                const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+                grayData[i] = grayData[i + 1] = grayData[i + 2] = gray;
+                grayData[i + 3] = 255;
+            }
+
+            // 步驟 2: 反轉灰階
+            const invertedData = new Uint8ClampedArray(grayData.length);
+            for (let i = 0; i < grayData.length; i += 4) {
+                invertedData[i] = invertedData[i + 1] = invertedData[i + 2] = 255 - grayData[i];
+                invertedData[i + 3] = 255;
+            }
+
+            // 步驟 3: 高斯模糊
+            const blurredData = gaussianBlur(invertedData, canvas.width, canvas.height, 5);
+
+            // 步驟 4: 顏色減淡混合
+            const sketchData = new Uint8ClampedArray(data.length);
+            for (let i = 0; i < data.length; i += 4) {
+                const base = grayData[i];
+                const blend = blurredData[i];
+                let result = blend === 255 ? 255 : Math.min(255, (base * 256) / (255 - blend));
+                result = result * edgeStrength;
+                sketchData[i] = sketchData[i + 1] = sketchData[i + 2] = Math.min(255, result);
+                sketchData[i + 3] = 255;
+            }
+
+            // 步驟 5: 添加紙張紋理
+            const finalData = addPaperTexture(sketchData, canvas.width, canvas.height, textureIntensity);
+
+            // 步驟 6: Sobel 邊緣檢測
+            const edgeData = sobelEdgeDetection(grayData, canvas.width, canvas.height);
+
+            // 混合邊緣和素描效果
+            for (let i = 0; i < finalData.length; i += 4) {
+                const edgeValue = edgeData[i];
+                finalData[i] = Math.max(0, finalData[i] - edgeValue * 0.5);
+                finalData[i + 1] = finalData[i];
+                finalData[i + 2] = finalData[i];
+            }
+
+            const resultImageData = new ImageData(finalData, canvas.width, canvas.height);
+            ctx.putImageData(resultImageData, 0, 0);
+
+            displayImages();
+        }
+
+        function gaussianBlur(data, width, height, radius) {
+            const result = new Uint8ClampedArray(data.length);
+            const kernel = createGaussianKernel(radius);
+            const kernelSize = kernel.length;
+            const half = Math.floor(kernelSize / 2);
+
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    let sum = 0;
+                    let weightSum = 0;
+
+                    for (let ky = 0; ky < kernelSize; ky++) {
+                        for (let kx = 0; kx < kernelSize; kx++) {
+                            const px = Math.min(width - 1, Math.max(0, x + kx - half));
+                            const py = Math.min(height - 1, Math.max(0, y + ky - half));
+                            const idx = (py * width + px) * 4;
+                            const weight = kernel[ky][kx];
+                            sum += data[idx] * weight;
+                            weightSum += weight;
+                        }
+                    }
+
+                    const idx = (y * width + x) * 4;
+                    result[idx] = result[idx + 1] = result[idx + 2] = sum / weightSum;
+                    result[idx + 3] = 255;
+                }
+            }
+
+            return result;
+        }
+
+        function createGaussianKernel(radius) {
+            const size = radius * 2 + 1;
+            const kernel = [];
+            const sigma = radius / 3;
+            let sum = 0;
+
+            for (let y = 0; y < size; y++) {
+                kernel[y] = [];
+                for (let x = 0; x < size; x++) {
+                    const dx = x - radius;
+                    const dy = y - radius;
+                    const value = Math.exp(-(dx * dx + dy * dy) / (2 * sigma * sigma));
+                    kernel[y][x] = value;
+                    sum += value;
+                }
+            }
+
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    kernel[y][x] /= sum;
+                }
+            }
+
+            return kernel;
+        }
+
+        function sobelEdgeDetection(data, width, height) {
+            const result = new Uint8ClampedArray(data.length);
+            const sobelX = [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]];
+            const sobelY = [[-1, -2, -1], [0, 0, 0], [1, 2, 1]];
+
+            for (let y = 1; y < height - 1; y++) {
+                for (let x = 1; x < width - 1; x++) {
+                    let gx = 0, gy = 0;
+
+                    for (let ky = -1; ky <= 1; ky++) {
+                        for (let kx = -1; kx <= 1; kx++) {
+                            const idx = ((y + ky) * width + (x + kx)) * 4;
+                            const pixel = data[idx];
+                            gx += pixel * sobelX[ky + 1][kx + 1];
+                            gy += pixel * sobelY[ky + 1][kx + 1];
+                        }
+                    }
+
+                    const magnitude = Math.sqrt(gx * gx + gy * gy);
+                    const idx = (y * width + x) * 4;
+                    result[idx] = result[idx + 1] = result[idx + 2] = Math.min(255, magnitude);
+                    result[idx + 3] = 255;
+                }
+            }
+
+            return result;
+        }
+
+        function addPaperTexture(data, width, height, intensity) {
+            const result = new Uint8ClampedArray(data.length);
+
+            for (let i = 0; i < data.length; i += 4) {
+                const noise = (Math.random() - 0.5) * intensity * 30;
+                result[i] = Math.min(255, Math.max(0, data[i] + noise));
+                result[i + 1] = result[i];
+                result[i + 2] = result[i];
+                result[i + 3] = 255;
+            }
+
+            return result;
+        }
+
+        function displayImages() {
+            imagesGrid.innerHTML = `
+                <div class="image-container">
+                    <h3>原始圖片</h3>
+                    <div class="image-wrapper">
+                        <img src="${currentImage.src}" alt="Original">
+                    </div>
+                </div>
+                <div class="image-container">
+                    <h3>素描效果</h3>
+                    <div class="image-wrapper">
+                        <img src="${canvas.toDataURL()}" alt="Sketch">
+                    </div>
+                </div>
+            `;
+        }
+
+        function downloadImage() {
+            const link = document.createElement('a');
+            link.download = 'sketch.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+    </script>
+</body>
+</html>
